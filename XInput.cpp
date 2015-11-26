@@ -35,6 +35,7 @@
 
 #define MAX_XINPUT_DEVICES		4				///< max number of XInput devices to query (XUSER_MAX_COUNT?)
 #define QUERY_TIMEOUT			(1.0/100)		///< minimum time interval between polls on a particular device
+#define DO_BATTERY				0				///< the battery API is only available to the Win8 SDK and higher (XInput 1.4)
 
 
 struct Device
@@ -61,6 +62,8 @@ struct Device
 		CHANNEL_START,
 		CHANNEL_BACK,
 		CHANNEL_CONNECTED,
+		CHANNEL_BATTERY_PAD,
+		CHANNEL_BATTERY_HEADSET,
 		// ... //
 		NUM_CHANNELS
 	};
@@ -162,6 +165,8 @@ PLUGIN_EXPORT void Reload (void* data, void* rm, double* maxValue)
 		L"Start",			// CHANNEL_START
 		L"Back",			// CHANNEL_BACK
 		L"Connected",		// CHANNEL_CONNECTED
+		L"Battery_Pad",		// CHANNEL_BATTERY_PAD
+		L"Battery_Headset",	// CHANNEL_BATTERY_HEADSET
 	};
 
 	// parse device index
@@ -253,6 +258,12 @@ void Device::Update (int devID)
 		CHANNEL_FACE_L,			// XINPUT_GAMEPAD_X
 		CHANNEL_FACE_U,			// XINPUT_GAMEPAD_Y
 	};
+	static const double s_batLevel[4] = {
+		0.0,					// BATTERY_LEVEL_EMPTY
+		0.33,					// BATTERY_LEVEL_LOW
+		0.75,					// BATTERY_LEVEL_MEDIUM
+		1.0,					// BATTERY_LEVEL_FULL
+	};
 
 	// check elapsed time from last poll
 	LARGE_INTEGER	pcCur;	QueryPerformanceCounter(&pcCur);
@@ -282,6 +293,21 @@ void Device::Update (int devID)
 		m_data[CHANNEL_JOYR_Y]		= (double)(gp.sThumbRY+32768) * (2.0f/65535) - 1.0f;
 		// mark as connected
 		m_data[CHANNEL_CONNECTED]	= 1.0f;
+#if (DO_BATTERY)
+		// retrieve battery levels
+		for(int iBat=0; iBat<2; ++iBat) {
+			XINPUT_BATTERY_INFORMATION batInfo;
+			double& batLevel = m_data[CHANNEL_BATTERY_PAD + iBat];
+			if(
+					(XInputGetBatteryInformation(devID, BATTERY_DEVTYPE_GAMEPAD+iBat, &batInfo) == ERROR_SUCCESS)
+					&& (batInfo.BatteryType != BATTERY_TYPE_UNKNOWN)
+			) {
+				batLevel = s_batLevel[batInfo.BatteryLevel];
+			} else {
+				batLevel = 0.0;
+			}
+		}
+#endif
 	} else {
 		// disconnected
 		memset(m_data, 0, sizeof(m_data));
