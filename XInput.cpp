@@ -35,7 +35,7 @@
 
 #define MAX_XINPUT_DEVICES		4				///< max number of XInput devices to query (XUSER_MAX_COUNT?)
 #define QUERY_TIMEOUT			(1.0/100)		///< minimum time interval between polls on a particular device
-#define DO_BATTERY				0				///< the battery API is only available to the Win8 SDK and higher (XInput 1.4)
+#define DO_BATTERY				1				///< the battery API is only available to the Win8 SDK and higher (XInput 1.4)
 
 
 struct Device
@@ -192,13 +192,13 @@ PLUGIN_EXPORT void Reload (void* data, void* rm, double* maxValue)
 			WCHAR	msg[512];
 			WCHAR*	d	= msg;
 			d			+= _snwprintf_s(
-								d, (sizeof(msg)+(UINT32)msg-(UINT32)d)/sizeof(WCHAR), _TRUNCATE,
+								d, (sizeof(msg)+(UINT32)(msg-d))/sizeof(WCHAR), _TRUNCATE,
 								L"Invalid Channel '%s', must be one of:",
 								channel
 						);
 			for(unsigned int i=0; i<Device::NUM_CHANNELS; ++i) {
 				d		+= _snwprintf_s(
-								d, (sizeof(msg)+(UINT32)msg-(UINT32)d)/sizeof(WCHAR), _TRUNCATE,
+								d, (sizeof(msg)+(UINT32)(msg-d))/sizeof(WCHAR), _TRUNCATE,
 								L"%s%s%s",
 								(i)? L", " : L" ",
 								(i==(Device::NUM_CHANNELS-1))? L"or " : L"",
@@ -206,7 +206,7 @@ PLUGIN_EXPORT void Reload (void* data, void* rm, double* maxValue)
 						);
 			}
 			d			+= _snwprintf_s(
-								d, (sizeof(msg)+(UINT32)msg-(UINT32)d)/sizeof(WCHAR), _TRUNCATE,
+								d, (sizeof(msg)+(UINT32)(msg-d))/sizeof(WCHAR), _TRUNCATE,
 								L".\n"
 						);
 			RmLogF(rm, LOG_ERROR, msg);
